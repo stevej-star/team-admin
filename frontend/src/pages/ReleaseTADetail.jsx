@@ -173,40 +173,21 @@ function DemoConsistencySection({ demoStart, demoEnd, onSave }) {
 
 const DECISION_FIELDS = [
   { key: 'decision_safety',        label: 'Safety of Release' },
-  { key: 'decision_rollback',      label: 'Rollback' },
   { key: 'decision_critical_path', label: 'Critical Path Impact' },
-  { key: 'decision_exceptions',    label: 'Exceptions & Alerts' },
-  { key: 'decision_pipeline',      label: 'Pipeline' },
+  { key: 'decision_rollback',      label: 'Rollback',            checkbox: true, checkboxText: 'This release is safe to rollback.' },
+  { key: 'decision_exceptions',    label: 'Exceptions & Alerts', checkbox: true, checkboxText: 'No release blocking alerts or exceptions.' },
+  { key: 'decision_pipeline',      label: 'Pipeline',            checkbox: true, checkboxText: 'The payment schemes pipeline is green.' },
 ];
 
 // Tech Approval is handled separately as a checkbox
 const TECH_APPROVAL_KEY = 'decision_tech_approval';
 
-function DecisionsSection({ release, onSave }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState({});
-  const [saving, setSaving] = useState(false);
+function TechApprovalBar({ release, onSave }) {
   const [approving, setApproving] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const reasonRef = useRef(null);
-
-  const openEdit = () => {
-    const d = {};
-    DECISION_FIELDS.forEach(({ key }) => { d[key] = release[key] || ''; });
-    setDraft(d);
-    setEditing(true);
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    await onSave(draft);
-    setSaving(false);
-    setEditing(false);
-  };
-
-  const handleCancel = () => setEditing(false);
 
   const isApproved = release[TECH_APPROVAL_KEY] === 'Tech approved.';
   const rawValue   = release[TECH_APPROVAL_KEY] || '';
@@ -214,6 +195,11 @@ function DecisionsSection({ release, onSave }) {
   const rejectionReason = isRejected
     ? rawValue.replace(/^Tech rejected\.\s*/, '').trim()
     : '';
+
+  // All decision fields must be filled before approval is allowed.
+  // If already approved/rejected, still allow toggling (to revoke).
+  const allDecisionsFilled = DECISION_FIELDS.every(({ key }) => !!release[key]);
+  const canAct = allDecisionsFilled || isApproved || isRejected;
 
   const handleApprovalToggle = async () => {
     setApproving(true);
@@ -225,11 +211,7 @@ function DecisionsSection({ release, onSave }) {
   };
 
   const openRejectModal = () => {
-    if (isRejected) {
-      // Already rejected — clicking again revokes it
-      handleRevokeRejection();
-      return;
-    }
+    if (isRejected) { handleRevokeRejection(); return; }
     setRejectReason('');
     setRejectModalOpen(true);
     setTimeout(() => reasonRef.current?.focus(), 50);
@@ -252,157 +234,177 @@ function DecisionsSection({ release, onSave }) {
     setRejecting(false);
   };
 
-  const hasAny = DECISION_FIELDS.some(({ key }) => release[key]);
-
   return (
-    <div className="rounded-lg border border-blue-200 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b bg-blue-50 border-blue-100">
-        <h3 className="text-sm font-semibold tracking-wide text-blue-800">Decisions</h3>
-        <div className="flex gap-2">
-          {editing ? (
-            <>
-              <button onClick={handleSave} disabled={saving} className="btn-primary text-xs py-1 px-3">
-                {saving ? 'Saving…' : 'Save'}
-              </button>
-              <button onClick={handleCancel} className="btn-secondary text-xs py-1 px-3">Cancel</button>
-            </>
-          ) : (
-            <button
-              onClick={openEdit}
-              className="text-xs border border-blue-200 rounded px-2 py-1 text-blue-600 hover:bg-white hover:text-blue-800 transition-colors"
-            >
-              ✏️ Edit
-            </button>
+    <>
+      <div className="border-t border-gray-200 bg-white px-5 py-3 flex items-start justify-between gap-4"
+        style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+        <div className="min-w-0">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tech Approval</span>
+          {!canAct && (
+            <p className="text-xs text-amber-600 mt-0.5 italic">Complete all decision fields to enable approval.</p>
           )}
+          {isApproved && <p className="text-sm mt-0.5 text-green-700">Tech approved.</p>}
+          {isRejected && (
+            <>
+              <p className="text-sm mt-0.5 text-red-600 font-medium">Tech rejected.</p>
+              {rejectionReason && (
+                <p className="text-sm mt-1 text-red-500 italic break-words">{rejectionReason}</p>
+              )}
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-2 shrink-0 pt-0.5">
+          <button
+            onClick={handleApprovalToggle}
+            disabled={approving || rejecting || !canAct}
+            title={!canAct ? 'Complete all decisions first' : isApproved ? 'Revoke approval' : 'Mark as tech approved'}
+            className={`w-6 h-6 rounded flex items-center justify-center border-2 transition-colors ${
+              !canAct
+                ? 'border-gray-200 text-gray-300 cursor-not-allowed opacity-50'
+                : isApproved
+                ? 'bg-green-500 border-green-500 text-white hover:bg-green-600 hover:border-green-600'
+                : 'border-gray-300 hover:border-green-400'
+            }`}
+          >
+            {isApproved && (
+              <svg className="w-3.5 h-3.5" viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            )}
+          </button>
+          <button
+            onClick={openRejectModal}
+            disabled={approving || rejecting || !canAct}
+            title={!canAct ? 'Complete all decisions first' : isRejected ? 'Revoke rejection' : 'Mark as tech rejected'}
+            className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded border transition-colors ${
+              !canAct
+                ? 'border-gray-200 text-gray-300 cursor-not-allowed opacity-50'
+                : isRejected
+                ? 'bg-red-500 border-red-500 text-white hover:bg-red-600 hover:border-red-600'
+                : 'border-red-300 text-red-500 hover:bg-red-50 hover:border-red-400'
+            }`}
+          >
+            <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+              <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            {isRejected ? 'Rejected' : 'Reject'}
+          </button>
         </div>
       </div>
 
-      <div className="bg-white divide-y divide-gray-100">
-        {editing ? (
-          <div className="p-4 space-y-4">
-            {DECISION_FIELDS.map(({ key, label }) => (
-              <div key={key}>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">[{label}]</label>
+      {rejectModalOpen && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setRejectModalOpen(false)} />
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-1">Reject Release</h2>
+            <p className="text-sm text-gray-500 mb-4">Provide a reason for rejecting this tech approval. This will be visible on the release record.</p>
+            <textarea
+              ref={reasonRef}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleConfirmReject(); }}
+              placeholder="Enter rejection reason…"
+              rows={4}
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2"
+              style={{ '--tw-ring-color': 'var(--accent-ring)' }}
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setRejectModalOpen(false)} className="btn-secondary text-sm px-4 py-2">Cancel</button>
+              <button
+                onClick={handleConfirmReject}
+                disabled={!rejectReason.trim()}
+                className="flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Confirm Rejection
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
+function DecisionsSection({ release, onSave }) {
+  // Local state mirrors each field value for controlled inputs
+  const [values, setValues] = useState(() => {
+    const v = {};
+    DECISION_FIELDS.forEach(({ key }) => { v[key] = release[key] || ''; });
+    return v;
+  });
+  const [saving, setSaving] = useState(null); // key of field currently saving
+
+  // Keep local state in sync if release prop changes externally
+  useEffect(() => {
+    setValues(v => {
+      const next = { ...v };
+      DECISION_FIELDS.forEach(({ key }) => { next[key] = release[key] || ''; });
+      return next;
+    });
+  }, [release]);
+
+  const saveField = async (key, value) => {
+    setSaving(key);
+    await onSave({ [key]: value });
+    setSaving(null);
+  };
+
+  const handleCheckbox = (key, checkboxText, checked) => {
+    const val = checked ? checkboxText : '';
+    setValues(v => ({ ...v, [key]: val }));
+    saveField(key, val);
+  };
+
+  const handleBlur = (key) => {
+    const current = values[key];
+    if (current !== (release[key] || '')) saveField(key, current);
+  };
+
+  return (
+    <div className="rounded-lg border border-blue-200 overflow-hidden">
+      <div className="px-4 py-2.5 border-b bg-blue-50 border-blue-100">
+        <h3 className="text-sm font-semibold tracking-wide text-blue-800">Decisions</h3>
+      </div>
+
+      <div className="bg-white divide-y divide-gray-100 p-4 space-y-4">
+        {DECISION_FIELDS.map(({ key, label, checkbox, checkboxText }) => (
+          <div key={key}>
+            {checkbox ? (
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={!!values[key]}
+                  onChange={(e) => handleCheckbox(key, checkboxText, e.target.checked)}
+                  className="w-4 h-4 rounded accent-blue-600"
+                  disabled={saving === key}
+                />
+                <span className="text-sm text-gray-700">
+                  <span className="font-semibold text-gray-500 text-xs uppercase tracking-wide mr-2">{label}</span>
+                  {checkboxText}
+                </span>
+                {saving === key && <span className="text-xs text-gray-400 ml-1">Saving…</span>}
+              </label>
+            ) : (
+              <>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">{label}</label>
                 <textarea
-                  value={draft[key] || ''}
-                  onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
+                  value={values[key]}
+                  onChange={(e) => setValues(v => ({ ...v, [key]: e.target.value }))}
+                  onBlur={() => handleBlur(key)}
                   placeholder={`${label}…`}
                   rows={2}
                   className="w-full text-sm border border-gray-200 rounded-lg p-2.5 resize-y focus:outline-none focus:ring-2 focus:border-transparent"
                   style={{ '--tw-ring-color': 'var(--accent-ring)' }}
                 />
-              </div>
-            ))}
-          </div>
-        ) : hasAny ? (
-          DECISION_FIELDS.map(({ key, label }) => (
-            release[key] ? (
-              <div key={key} className="px-4 py-3">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
-                <p className="text-sm mt-0.5 text-gray-800">{release[key]}</p>
-              </div>
-            ) : null
-          ))
-        ) : (
-          <p className="px-4 py-3 text-sm text-gray-400 italic">No decisions recorded yet — click Edit to add.</p>
-        )}
-
-        {/* Tech Approval — always-visible buttons, never inside edit mode */}
-        <div className="px-4 py-3 flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tech Approval</span>
-            {isApproved && <p className="text-sm mt-0.5 text-green-700">Tech approved.</p>}
-            {isRejected && (
-              <>
-                <p className="text-sm mt-0.5 text-red-600 font-medium">Tech rejected.</p>
-                {rejectionReason && (
-                  <p className="text-sm mt-1 text-red-500 italic break-words">{rejectionReason}</p>
-                )}
+                {saving === key && <p className="text-xs text-gray-400 mt-1">Saving…</p>}
               </>
             )}
           </div>
-          <div className="flex items-center gap-2 shrink-0 pt-0.5">
-            {/* Approve checkbox */}
-            <button
-              onClick={handleApprovalToggle}
-              disabled={approving || rejecting}
-              title={isApproved ? 'Revoke approval' : 'Mark as tech approved'}
-              className={`w-6 h-6 rounded flex items-center justify-center border-2 transition-colors ${
-                isApproved
-                  ? 'bg-green-500 border-green-500 text-white hover:bg-green-600 hover:border-green-600'
-                  : 'border-gray-300 hover:border-green-400'
-              }`}
-            >
-              {isApproved && (
-                <svg className="w-3.5 h-3.5" viewBox="0 0 12 12" fill="none">
-                  <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              )}
-            </button>
-
-            {/* Reject button */}
-            <button
-              onClick={openRejectModal}
-              disabled={approving || rejecting}
-              title={isRejected ? 'Revoke rejection' : 'Mark as tech rejected'}
-              className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded border transition-colors ${
-                isRejected
-                  ? 'bg-red-500 border-red-500 text-white hover:bg-red-600 hover:border-red-600'
-                  : 'border-red-300 text-red-500 hover:bg-red-50 hover:border-red-400'
-              }`}
-            >
-              <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
-                <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              {isRejected ? 'Rejected' : 'Reject'}
-            </button>
-          </div>
-        </div>
-
-        {/* Rejection reason modal */}
-        {rejectModalOpen && createPortal(
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            {/* Backdrop */}
-            <div
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setRejectModalOpen(false)}
-            />
-            {/* Dialog */}
-            <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
-              <h2 className="text-base font-semibold text-gray-900 mb-1">Reject Release</h2>
-              <p className="text-sm text-gray-500 mb-4">Provide a reason for rejecting this tech approval. This will be visible on the release record.</p>
-              <textarea
-                ref={reasonRef}
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleConfirmReject(); }}
-                placeholder="Enter rejection reason…"
-                rows={4}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2"
-                style={{ '--tw-ring-color': 'var(--accent-ring)' }}
-              />
-              <div className="flex justify-end gap-2 mt-4">
-                <button
-                  onClick={() => setRejectModalOpen(false)}
-                  className="btn-secondary text-sm px-4 py-2"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmReject}
-                  disabled={!rejectReason.trim()}
-                  className="flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  Confirm Rejection
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
+        ))}
       </div>
     </div>
   );
@@ -420,17 +422,7 @@ function generateMarkdown(release) {
   lines.push('');
 
   // Standard text sections
-  const textSections = [
-    { key: 'database_migrations', label: 'Database Migrations' },
-    { key: 'config',              label: 'Config' },
-    { key: 'java_connector',      label: 'Java Connector' },
-    { key: 'java_common',         label: 'Java Common' },
-    { key: 'foundation',          label: 'Foundation' },
-    { key: 'generated_source',    label: 'Generated Source Code' },
-    { key: 'java_server',         label: 'Java Server' },
-    { key: 'build_logic',         label: 'Build Logic' },
-  ];
-  textSections.forEach(({ key, label }) => {
+  SECTIONS.forEach(({ key, label }) => {
     lines.push(`### ${label}`);
     lines.push(release[key] || '_None_');
     lines.push('');
@@ -817,6 +809,13 @@ export default function ReleaseTADetail() {
   const [editingHeader, setEditingHeader] = useState(false);
   const [headerForm, setHeaderForm] = useState({});
 
+  // Resizable split — stored as left-panel percentage (must be before any early return)
+  const [splitPct, setSplitPct] = useState(
+    () => parseFloat(localStorage.getItem('rta_split') || '50')
+  );
+  const containerRef = useRef(null);
+  const dragging = useRef(false);
+
   useEffect(() => {
     fetch(`/api/release-tas/${id}`)
       .then((r) => r.json())
@@ -857,12 +856,33 @@ export default function ReleaseTADetail() {
     navigate('/releases');
   };
 
+  const onDividerMouseDown = (e) => {
+    e.preventDefault();
+    dragging.current = true;
+    const onMove = (ev) => {
+      if (!dragging.current || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const pct = Math.min(75, Math.max(25, ((ev.clientX - rect.left) / rect.width) * 100));
+      setSplitPct(pct);
+      localStorage.setItem('rta_split', String(pct));
+    };
+    const onUp = () => {
+      dragging.current = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
+
   if (!release) return <p className="text-sm text-gray-500">Loading…</p>;
 
   return (
-    <div className="flex gap-6 items-start min-h-full">
-      {/* ── Left: edit panels ───────────────────────────────── */}
-      <div className="flex-1 min-w-0">
+    <div ref={containerRef} className="flex items-start min-h-full" style={{ gap: 0 }}>
+      {/* Left panel: flex column, scrollable content + sticky footer */}
+      <div className="min-w-0 flex flex-col" style={{ width: `${splitPct}%`, height: 'calc(100vh - 3rem)', position: 'sticky', top: 0 }}>
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto pr-1">
         <Link to="/releases" className="text-sm text-gray-500 hover:text-gray-700 mb-5 inline-block">
           ← Release TA
         </Link>
@@ -946,10 +966,24 @@ export default function ReleaseTADetail() {
           ))}
           <DecisionsSection release={release} onSave={saveDecisions} />
         </div>
+        </div>
+
+        {/* Sticky footer: Tech Approval */}
+        <TechApprovalBar release={release} onSave={save} />
+      </div>
+
+      {/* ── Drag divider ────────────────────────────────────── */}
+      <div
+        onMouseDown={onDividerMouseDown}
+        className="shrink-0 flex items-center justify-center cursor-col-resize select-none group"
+        style={{ width: 12 }}
+        title="Drag to resize"
+      >
+        <div className="w-0.5 h-full min-h-screen bg-gray-200 group-hover:bg-gray-400 transition-colors" />
       </div>
 
       {/* ── Right: live markdown export ─────────────────────── */}
-      <div className="flex-1 sticky top-0" style={{ height: 'calc(100vh - 3rem)' }}>
+      <div className="min-w-0 sticky top-0" style={{ width: `calc(${100 - splitPct}% - 12px)`, height: 'calc(100vh - 3rem)' }}>
         <ExportPanel release={release} />
       </div>
     </div>

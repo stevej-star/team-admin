@@ -26,6 +26,12 @@ const FEATURE_OPTIONS = [
     label: 'Release TA',
     description: 'Structured release technical approval workflow.',
   },
+  {
+    key: 'notes',
+    icon: '📝',
+    label: 'Notes',
+    description: 'Markdown notes with folders, tags and categories.',
+  },
 ];
 
 const STEPS = ['Welcome', 'Your Profile', 'Branding', 'Features'];
@@ -98,7 +104,7 @@ export default function Onboarding() {
     // Auto-create team member if team feature enabled and name provided
     if (finalFeatures.includes('team') && profile.name) {
       try {
-        await fetch('/api/team-members', {
+        await fetch('/api/members', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: profile.name, role: profile.role || 'Team Member' }),

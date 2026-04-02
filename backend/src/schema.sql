@@ -70,6 +70,31 @@ CREATE TABLE IF NOT EXISTS release_tas (
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS note_folders (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name       TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS notes (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title      TEXT NOT NULL DEFAULT 'Untitled',
+  content    TEXT NOT NULL DEFAULT '',
+  folder_id  UUID REFERENCES note_folders(id) ON DELETE SET NULL,
+  category   TEXT NOT NULL DEFAULT '',
+  tags       TEXT NOT NULL DEFAULT '',
+  pinned     BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS note_categories (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name       TEXT NOT NULL,
+  color      TEXT NOT NULL DEFAULT '#94a3b8',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Safe to re-run: add new columns to existing tables
 ALTER TABLE release_tas ADD COLUMN IF NOT EXISTS demo_start             TIMESTAMPTZ;
 ALTER TABLE release_tas ADD COLUMN IF NOT EXISTS demo_end               TIMESTAMPTZ;

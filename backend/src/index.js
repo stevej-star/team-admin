@@ -10,6 +10,7 @@ app.use('/api/members', require('./routes/members'));
 app.use('/api/projects', require('./routes/projects'));
 app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/release-tas', require('./routes/release-tas'));
+app.use('/api/notes', require('./routes/notes'));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 

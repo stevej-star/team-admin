@@ -7,6 +7,7 @@ const ALL_LINKS = [
   { to: '/projects',  label: 'Projects',   icon: '📁', feature: 'projects' },
   { to: '/team',      label: 'Team',       icon: '👥', feature: 'team' },
   { to: '/releases',  label: 'Release TA', icon: '🚀', feature: 'releases' },
+  { to: '/notes',     label: 'Notes',      icon: '📝', feature: 'notes' },
 ];
 
 export default function Sidebar() {

@@ -99,7 +99,7 @@ function PinInput({ value, onChange, placeholder = 'Enter PIN' }) {
 function TeamPrivacySection() {
   const { teamPin, saveTeamPin, removeTeamPin, pinTimeout, savePinTimeout, lockTeam } = useAppSettings();
 
-  const [mode, setMode] = useState('idle'); // idle | set | change | confirm
+  const [mode, setMode] = useState('idle'); // idle | set | verify | change | confirm | remove
   const [step1, setStep1] = useState('');
   const [step2, setStep2] = useState('');
   const [error, setError] = useState('');
@@ -107,13 +107,17 @@ function TeamPrivacySection() {
 
   const resetFlow = () => { setMode('idle'); setStep1(''); setStep2(''); setError(''); setCurrentEntry(''); };
 
+  const handleVerifyCurrent = () => {
+    if (currentEntry !== teamPin) { setError('Incorrect PIN'); setCurrentEntry(''); return; }
+    setCurrentEntry('');
+    setError('');
+    setMode(mode === 'verify' ? 'change' : 'remove');
+  };
+
   const handleSetPin = () => {
     if (step1.length < 4) { setError('PIN must be 4 digits'); return; }
-    if (mode === 'set' || mode === 'change') {
-      setMode('confirm');
-      setError('');
-      return;
-    }
+    setMode('confirm');
+    setError('');
   };
 
   const handleConfirm = () => {
@@ -123,7 +127,6 @@ function TeamPrivacySection() {
   };
 
   const handleRemove = () => {
-    if (currentEntry !== teamPin) { setError('Incorrect PIN'); setCurrentEntry(''); return; }
     removeTeamPin();
     resetFlow();
   };
@@ -208,9 +211,28 @@ function TeamPrivacySection() {
 
       {mode === 'idle' && (
         <div className="flex gap-2">
-          <button className="btn-secondary" onClick={() => { setMode('change'); setError(''); }}>Change PIN</button>
+          <button className="btn-secondary" onClick={() => { setMode('verify'); setError(''); }}>Change PIN</button>
           <button className="btn-secondary text-red-600" onClick={() => { setMode('remove'); setError(''); }}>Remove PIN</button>
           <button className="btn-secondary" onClick={() => { lockTeam(); }}>Lock now</button>
+        </div>
+      )}
+
+      {/* Step 0 of change: verify current PIN */}
+      {mode === 'verify' && (
+        <div className="space-y-4 border-t border-gray-100 pt-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Enter your current PIN</label>
+            <input
+              type="password" inputMode="numeric" maxLength={4} value={currentEntry} autoFocus
+              onChange={(e) => { setCurrentEntry(e.target.value.replace(/\D/g, '').slice(0, 4)); setError(''); }}
+              className="input w-32 tracking-widest text-center text-lg" placeholder="••••"
+            />
+          </div>
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <div className="flex gap-2">
+            <button className="btn-primary" onClick={handleVerifyCurrent} disabled={currentEntry.length < 4}>Next</button>
+            <button className="btn-secondary" onClick={resetFlow}>Cancel</button>
+          </div>
         </div>
       )}
 
@@ -262,7 +284,10 @@ function TeamPrivacySection() {
           </div>
           {error && <p className="text-sm text-red-500">{error}</p>}
           <div className="flex gap-2">
-            <button className="btn-primary bg-red-600 hover:bg-red-700" onClick={handleRemove} disabled={currentEntry.length < 4}>Remove PIN</button>
+            <button className="btn-primary bg-red-600 hover:bg-red-700" onClick={() => {
+              if (currentEntry !== teamPin) { setError('Incorrect PIN'); setCurrentEntry(''); return; }
+              handleRemove();
+            }} disabled={currentEntry.length < 4}>Remove PIN</button>
             <button className="btn-secondary" onClick={resetFlow}>Cancel</button>
           </div>
         </div>
@@ -472,6 +497,7 @@ export default function Settings() {
             { key: 'projects', icon: '📁', label: 'Projects',          description: 'Projects, milestones and linked resources.' },
             { key: 'team',     icon: '👥', label: 'Team Management',   description: 'Team member profiles and roles.' },
             { key: 'releases', icon: '🚀', label: 'Release TA',        description: 'Release technical approval workflow.' },
+            { key: 'notes',    icon: '📝', label: 'Notes',             description: 'Markdown notes with folders and tags.' },
           ].map(({ key, icon, label, description }) => {
             const enabled = enabledFeatures.includes(key);
             return (

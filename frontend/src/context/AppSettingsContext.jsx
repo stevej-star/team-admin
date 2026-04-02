@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 
 const AppSettingsContext = createContext(null);
 
-const ALL_FEATURES = ['tasks', 'projects', 'team', 'releases'];
+const ALL_FEATURES = ['tasks', 'projects', 'team', 'releases', 'notes'];
 
 export function AppSettingsProvider({ children }) {
   const [appName, setAppName] = useState(

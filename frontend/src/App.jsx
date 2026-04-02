@@ -12,7 +12,7 @@ import Tasks from './pages/Tasks';
 import ReleaseTAs from './pages/ReleaseTAs';
 import ReleaseTADetail from './pages/ReleaseTADetail';
 import Settings from './pages/Settings';
-
+import Notes from './pages/Notes';
 function AppShell() {
   const { onboardingComplete } = useAppSettings();
 
@@ -34,6 +34,7 @@ function AppShell() {
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/releases" element={<ReleaseTAs />} />
           <Route path="/releases/:id" element={<ReleaseTADetail />} />
+          <Route path="/notes" element={<Notes />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </main>
