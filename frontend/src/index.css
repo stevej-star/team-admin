@@ -1,0 +1,370 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Theme tokens ────────────────────────────────────────────── */
+
+:root {
+  --sidebar-bg:        #111827;
+  --sidebar-text:      #f3f4f6;
+  --sidebar-active-bg: #374151;
+  --sidebar-hover-bg:  #1f2937;
+  --sidebar-muted:     #9ca3af;
+  --sidebar-border:    #374151;
+  --canvas-bg:         #f9fafb;
+  --accent:            #2563eb;
+  --accent-hover:      #1d4ed8;
+  --accent-ring:       #93c5fd;
+  --card-bg:           #ffffff;
+  --card-border:       #e5e7eb;
+  --text-primary:      #111827;
+  --text-muted:        #6b7280;
+}
+
+[data-theme="modern"] {
+  --sidebar-bg:        #1e1b4b;
+  --sidebar-text:      #e0e7ff;
+  --sidebar-active-bg: #3730a3;
+  --sidebar-hover-bg:  #312e81;
+  --sidebar-muted:     #a5b4fc;
+  --sidebar-border:    #3730a3;
+  --canvas-bg:         #f8fafc;
+  --accent:            #7c3aed;
+  --accent-hover:      #6d28d9;
+  --accent-ring:       #c4b5fd;
+  --card-bg:           #ffffff;
+  --card-border:       #e2e8f0;
+  --text-primary:      #0f172a;
+  --text-muted:        #64748b;
+}
+
+[data-theme="techy"] {
+  --sidebar-bg:        #020617;
+  --sidebar-text:      #67e8f9;
+  --sidebar-active-bg: #164e63;
+  --sidebar-hover-bg:  #0c1a2e;
+  --sidebar-muted:     #a5f3fc;
+  --sidebar-border:    #155e75;
+  --canvas-bg:         #0f172a;
+  --accent:            #06b6d4;
+  --accent-hover:      #0891b2;
+  --accent-ring:       #67e8f9;
+  --card-bg:           #1e293b;
+  --card-border:       #334155;
+  --text-primary:      #e2e8f0;
+  --text-muted:        #94a3b8;
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;
+}
+
+[data-theme="minimal"] {
+  --sidebar-bg:        #18181b;
+  --sidebar-text:      #fafafa;
+  --sidebar-active-bg: #3f3f46;
+  --sidebar-hover-bg:  #27272a;
+  --sidebar-muted:     #d4d4d8;
+  --sidebar-border:    #3f3f46;
+  --canvas-bg:         #ffffff;
+  --accent:            #18181b;
+  --accent-hover:      #3f3f46;
+  --accent-ring:       #a1a1aa;
+  --card-bg:           #ffffff;
+  --card-border:       #e4e4e7;
+  --text-primary:      #18181b;
+  --text-muted:        #71717a;
+}
+
+[data-theme="sunset"] {
+  --sidebar-bg:        #7c2d12;
+  --sidebar-text:      #ffedd5;
+  --sidebar-active-bg: #9a3412;
+  --sidebar-hover-bg:  #92400e;
+  --sidebar-muted:     #fed7aa;
+  --sidebar-border:    #9a3412;
+  --canvas-bg:         #fffbf7;
+  --accent:            #ea580c;
+  --accent-hover:      #c2410c;
+  --accent-ring:       #fdba74;
+  --card-bg:           #ffffff;
+  --card-border:       #fed7aa;
+  --text-primary:      #1c1917;
+  --text-muted:        #78716c;
+}
+
+[data-theme="forest"] {
+  --sidebar-bg:        #14532d;
+  --sidebar-text:      #dcfce7;
+  --sidebar-active-bg: #166534;
+  --sidebar-hover-bg:  #15803d;
+  --sidebar-muted:     #86efac;
+  --sidebar-border:    #166534;
+  --canvas-bg:         #f7fdf9;
+  --accent:            #16a34a;
+  --accent-hover:      #15803d;
+  --accent-ring:       #86efac;
+  --card-bg:           #ffffff;
+  --card-border:       #bbf7d0;
+  --text-primary:      #14532d;
+  --text-muted:        #4b7c5e;
+}
+
+/* ── Layout ──────────────────────────────────────────────────── */
+
+.app-canvas {
+  background-color: var(--canvas-bg);
+  color: var(--text-primary);
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+
+.sidebar {
+  background-color: var(--sidebar-bg);
+  color: var(--sidebar-text);
+}
+
+.sidebar-divider {
+  border-color: var(--sidebar-border);
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--sidebar-muted);
+  transition: background-color 150ms, color 150ms;
+}
+
+.sidebar-link:hover {
+  background-color: var(--sidebar-hover-bg);
+  color: var(--sidebar-text);
+}
+
+.sidebar-link.active {
+  background-color: var(--sidebar-active-bg);
+  color: var(--sidebar-text);
+}
+
+/* ── Components ──────────────────────────────────────────────── */
+
+@layer components {
+  .input {
+    @apply w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-transparent;
+    border-color: var(--card-border);
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    --tw-ring-color: var(--accent-ring);
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white;
+    background-color: var(--accent);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--accent-hover);
+  }
+
+  .btn-secondary {
+    @apply border px-4 py-2 rounded-lg text-sm font-medium transition-colors;
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+    color: var(--text-primary);
+  }
+
+  .btn-secondary:hover {
+    filter: brightness(0.97);
+  }
+}
+
+[data-theme="notepad"] {
+  --sidebar-bg:        #4a3728;
+  --sidebar-text:      #fdf6e3;
+  --sidebar-active-bg: #6b4c38;
+  --sidebar-hover-bg:  #5c3d2a;
+  --sidebar-muted:     #d4a97a;
+  --sidebar-border:    #6b4c38;
+  --canvas-bg:         #fefce8;
+  --accent:            #1d4ed8;
+  --accent-hover:      #1e40af;
+  --accent-ring:       #93c5fd;
+  --card-bg:           #fffdf0;
+  --card-border:       #bfdbfe;
+  --text-primary:      #1a1207;
+  --text-muted:        #78716c;
+  font-family: 'Caveat', cursive;
+  font-size: 1.1rem;
+  letter-spacing: 0.01em;
+}
+
+/* Lined paper on the canvas */
+[data-theme="notepad"] .app-canvas {
+  background-image:
+    repeating-linear-gradient(
+      transparent,
+      transparent 27px,
+      #bfdbfe 27px,
+      #bfdbfe 28px
+    ),
+    linear-gradient(
+      90deg,
+      transparent 3.5rem,
+      #fca5a5 3.5rem,
+      #fca5a5 calc(3.5rem + 1px),
+      transparent calc(3.5rem + 1px)
+    );
+  background-size: 100% 28px, 100% 100%;
+}
+
+/* Cards look like notebook paper too */
+[data-theme="notepad"] .bg-white {
+  background-color: var(--card-bg);
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 27px,
+    #dbeafe 27px,
+    #dbeafe 28px
+  );
+  background-size: 100% 28px;
+}
+
+/* Scale up headings to feel more hand-lettered */
+[data-theme="notepad"] h1 { font-size: 2rem; font-weight: 700; }
+[data-theme="notepad"] h2 { font-size: 1.75rem; font-weight: 700; }
+[data-theme="notepad"] h3 { font-size: 1.4rem; font-weight: 600; }
+
+/* Inputs look like writing on a line */
+[data-theme="notepad"] input,
+[data-theme="notepad"] select,
+[data-theme="notepad"] textarea {
+  background: transparent;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: 2px solid var(--accent);
+  border-radius: 0;
+  font-family: 'Caveat', cursive;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+[data-theme="notepad"] input:focus,
+[data-theme="notepad"] select:focus,
+[data-theme="notepad"] textarea:focus {
+  outline: none;
+  box-shadow: none;
+  border-bottom-color: #dc2626;
+}
+
+/* ── Accent overrides for hardcoded blue Tailwind utilities ─── */
+/* Applies whenever any non-default theme is active             */
+
+[data-theme] .text-blue-600               { color: var(--accent); }
+[data-theme] .hover\:text-blue-600:hover  { color: var(--accent); }
+[data-theme] .hover\:border-blue-400:hover { border-color: var(--accent); }
+
+[data-theme="techy"] .bg-white         { background-color: var(--card-bg); }
+[data-theme="techy"] .bg-gray-50       { background-color: var(--canvas-bg); }
+[data-theme="techy"] .bg-gray-100      { background-color: var(--canvas-bg); }
+[data-theme="techy"] .border-gray-100,
+[data-theme="techy"] .border-gray-200,
+[data-theme="techy"] .border-gray-300  { border-color: var(--card-border); }
+[data-theme="techy"] .text-gray-900,
+[data-theme="techy"] .text-gray-800,
+[data-theme="techy"] .text-gray-700    { color: var(--text-primary); }
+[data-theme="techy"] .text-gray-600,
+[data-theme="techy"] .text-gray-500,
+[data-theme="techy"] .text-gray-400    { color: var(--text-muted); }
+[data-theme="techy"] .text-blue-600,
+[data-theme="techy"] .text-blue-400    { color: var(--accent); }
+[data-theme="techy"] a.hover\:border-blue-400:hover { border-color: var(--accent); }
+[data-theme="techy"] select            { background-color: var(--card-bg); color: var(--text-primary); border-color: var(--card-border); }
+
+/* Techy: inputs & textareas */
+[data-theme="techy"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+[data-theme="techy"] textarea {
+  background-color: var(--canvas-bg);
+  color: var(--text-primary);
+  border-color: var(--card-border);
+}
+[data-theme="techy"] input::placeholder,
+[data-theme="techy"] textarea::placeholder { color: var(--text-muted); }
+
+/* Techy: hover states */
+[data-theme="techy"] .hover\:bg-white:hover  { background-color: var(--card-bg) !important; }
+[data-theme="techy"] .hover\:bg-gray-50:hover { background-color: rgba(255,255,255,0.06) !important; }
+[data-theme="techy"] .hover\:text-gray-700:hover { color: var(--text-primary) !important; }
+
+/* Techy: blue-tinted sections (Decisions panel) */
+[data-theme="techy"] .bg-blue-50        { background-color: var(--canvas-bg); }
+[data-theme="techy"] .border-blue-100,
+[data-theme="techy"] .border-blue-200   { border-color: var(--card-border); }
+[data-theme="techy"] .text-blue-800     { color: var(--text-primary); }
+
+/* Techy: divide lines */
+[data-theme="techy"] .divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--card-border);
+}
+
+/* Techy: status badges */
+[data-theme="techy"] .bg-green-100  { background-color: rgba(34, 197, 94, 0.15); }
+[data-theme="techy"] .text-green-700 { color: #4ade80; }
+[data-theme="techy"] .bg-yellow-100 { background-color: rgba(234, 179, 8, 0.15); }
+[data-theme="techy"] .text-yellow-700 { color: #facc15; }
+[data-theme="techy"] .bg-red-100    { background-color: rgba(239, 68, 68, 0.15); }
+[data-theme="techy"] .text-red-700  { color: #f87171; }
+
+/* Techy: validation error highlight */
+[data-theme="techy"] .bg-red-50     { background-color: rgba(239, 68, 68, 0.12); }
+[data-theme="techy"] .text-red-500  { color: #f87171; }
+[data-theme="techy"] .text-red-600  { color: #f87171; }
+[data-theme="techy"] .outline-red-300 { outline-color: rgba(239, 68, 68, 0.5); }
+[data-theme="techy"] .border-red-300 { border-color: rgba(239, 68, 68, 0.5); }
+[data-theme="techy"] .hover\:bg-red-50:hover { background-color: rgba(239, 68, 68, 0.12) !important; }
+
+/* Techy: dashed "add line" button */
+[data-theme="techy"] .border-gray-300 { border-color: var(--card-border); }
+[data-theme="techy"] .hover\:text-gray-600:hover { color: var(--text-primary) !important; }
+
+/* ── Markdown body styles ────────────────────────────────────── */
+.markdown-body { color: var(--text-primary); line-height: 1.65; }
+.markdown-body h1 { font-size: 1.5rem;  font-weight: 700; margin: 1.25rem 0 0.5rem; }
+.markdown-body h2 { font-size: 1.25rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+.markdown-body h3 { font-size: 1.05rem; font-weight: 600; margin: 0.9rem 0 0.35rem; }
+.markdown-body h4 { font-size: 0.95rem; font-weight: 600; margin: 0.75rem 0 0.3rem; }
+.markdown-body p  { margin: 0.5rem 0; }
+.markdown-body ul,
+.markdown-body ol { margin: 0.4rem 0; padding-left: 1.5rem; }
+.markdown-body li { margin: 0.2rem 0; }
+.markdown-body code {
+  background: var(--canvas-bg);
+  border: 1px solid var(--card-border);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-size: 0.82em;
+  font-family: ui-monospace, 'Cascadia Code', Menlo, monospace;
+}
+.markdown-body pre {
+  background: var(--canvas-bg);
+  border: 1px solid var(--card-border);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 0.6rem 0;
+}
+.markdown-body pre code { background: none; border: none; padding: 0; font-size: 0.85em; }
+.markdown-body a { color: var(--accent); text-decoration: underline; }
+.markdown-body strong { font-weight: 600; }
+.markdown-body em { font-style: italic; }
+.markdown-body blockquote {
+  border-left: 3px solid var(--card-border);
+  padding-left: 0.75rem;
+  color: var(--text-muted);
+  margin: 0.5rem 0;
+}
+.markdown-body hr { border: none; border-top: 1px solid var(--card-border); margin: 1rem 0; }
+.markdown-body table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; }
+.markdown-body th,
+.markdown-body td { border: 1px solid var(--card-border); padding: 0.35rem 0.6rem; }
+.markdown-body th { background: var(--canvas-bg); font-weight: 600; }
