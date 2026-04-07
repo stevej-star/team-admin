@@ -34,9 +34,10 @@ function formatDate(iso) {
 
 // ── Folder sidebar item ────────────────────────────────────────
 
-function FolderItem({ folder, selected, onSelect, onRename, onDelete }) {
+function FolderItem({ folder, selected, onSelect, onRename, onDelete, onNoteDrop }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(folder.name);
+  const [dropOver, setDropOver] = useState(false);
   const inputRef = useRef(null);
 
   const commit = () => {
@@ -50,9 +51,13 @@ function FolderItem({ folder, selected, onSelect, onRename, onDelete }) {
   return (
     <div
       className={`group flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer text-sm transition-colors ${
+        dropOver ? 'bg-blue-100 ring-2 ring-inset ring-blue-400 text-blue-700' :
         selected ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-100 text-gray-700'
       }`}
       onClick={() => !editing && onSelect(folder.id)}
+      onDragOver={e => { e.preventDefault(); setDropOver(true); }}
+      onDragLeave={() => setDropOver(false)}
+      onDrop={e => { e.preventDefault(); setDropOver(false); onNoteDrop(folder.id); }}
     >
       <svg className="w-3.5 h-3.5 shrink-0 text-gray-400" fill="none" viewBox="0 0 16 16">
         <path d="M2 4a1 1 0 011-1h3.586a1 1 0 01.707.293L8 4h5a1 1 0 011 1v6a1 1 0 01-1 1H3a1 1 0 01-1-1V4z" fill="currentColor"/>
@@ -98,10 +103,12 @@ function FolderItem({ folder, selected, onSelect, onRename, onDelete }) {
 
 // ── Note list item ─────────────────────────────────────────────
 
-function NoteCard({ note, selected, onSelect, categories }) {
+function NoteCard({ note, selected, onSelect, categories, onDragStart }) {
   const tags = parseTags(note.tags);
   return (
     <div
+      draggable
+      onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; onDragStart(note.id); }}
       onClick={() => onSelect(note.id)}
       className={`px-3 py-3 cursor-pointer border-b border-gray-100 transition-colors ${
         selected ? 'bg-blue-50 border-l-2 border-l-blue-500' : 'hover:bg-gray-50'
@@ -161,6 +168,7 @@ export default function Notes() {
   const [selectedCatFilter, setSelectedCatFilter] = useState(null);
   const newCatRef = useRef(null);
   const saveTimer = useRef(null);
+  const draggedNoteId = useRef(null);
   const [tagInput, setTagInput] = useState('');
   const [confirmModal, setConfirmModal] = useState({ open: false, message: '', onConfirm: null });
 
@@ -314,6 +322,22 @@ export default function Notes() {
     });
   };
 
+  const moveNoteToFolder = async (noteId, folderId) => {
+    const summaryNote = notes.find(n => n.id === noteId);
+    if (!summaryNote || summaryNote.folder_id === folderId) return;
+    // The notes list only has a snippet, not full content — fetch the full note first
+    const fullNote = (noteId === selectedNoteId && noteContent)
+      ? noteContent
+      : await fetch(`/api/notes/${noteId}`).then(r => r.json());
+    await fetch(`/api/notes/${noteId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...fullNote, folder_id: folderId }),
+    });
+    await loadNotes();
+    if (selectedNoteId === noteId) setNoteContent(n => n ? { ...n, folder_id: folderId } : n);
+  };
+
   const togglePin = async () => {
     if (!noteContent) return;
     const newPinned = !noteContent.pinned;
@@ -373,6 +397,8 @@ export default function Notes() {
             <button
               key={f.id}
               onClick={() => { setSelectedFolderFilter(f.id); setSelectedTagFilter(null); }}
+              onDragOver={f.id === '__all__' ? e => e.preventDefault() : undefined}
+              onDrop={f.id === '__all__' ? e => { e.preventDefault(); if (draggedNoteId.current) { moveNoteToFolder(draggedNoteId.current, null); draggedNoteId.current = null; } } : undefined}
               className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors mb-0.5 ${
                 selectedFolderFilter === f.id && !selectedTagFilter
                   ? 'bg-blue-50 text-blue-700 font-medium'
@@ -423,6 +449,7 @@ export default function Notes() {
               onSelect={id => { setSelectedFolderFilter(id); setSelectedTagFilter(null); }}
               onRename={renameFolder}
               onDelete={deleteFolder}
+              onNoteDrop={folderId => { if (draggedNoteId.current) { moveNoteToFolder(draggedNoteId.current, folderId); draggedNoteId.current = null; } }}
             />
           ))}
 
@@ -567,6 +594,7 @@ export default function Notes() {
                 selected={n.id === selectedNoteId}
                 onSelect={setSelectedNoteId}
                 categories={categories}
+                onDragStart={id => { draggedNoteId.current = id; }}
               />
             ))
           )}
