@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAppSettings } from '../context/AppSettingsContext';
 
 const themes = [
@@ -300,11 +300,15 @@ export default function Settings() {
   const {
     appName, updateAppName, theme, updateTheme, logoDataUrl, saveLogo, removeLogo,
     userProfile, updateUserProfile, enabledFeatures, updateEnabledFeatures,
-    resetOnboarding, ALL_FEATURES,
+    featureOrder, updateFeatureOrder, resetOnboarding, ALL_FEATURES,
   } = useAppSettings();
   const [draft, setDraft] = useState(appName);
   const [saved, setSaved] = useState(false);
   const [logoError, setLogoError] = useState('');
+
+  // Feature drag-and-drop
+  const dragIndex = useRef(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
 
   // Profile
   const [profileName, setProfileName] = useState(userProfile.name || '');
@@ -490,33 +494,68 @@ export default function Settings() {
       {/* Features */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
         <h3 className="text-base font-semibold mb-1">Features</h3>
-        <p className="text-sm text-gray-500 mb-4">Toggle which modules appear in the sidebar. At least one must be enabled.</p>
-        <div className="space-y-3">
-          {[
-            { key: 'tasks',    icon: '✅', label: 'My Tasks',          description: 'Personal task tracking with due dates.' },
-            { key: 'projects', icon: '📁', label: 'Projects',          description: 'Projects, milestones and linked resources.' },
-            { key: 'team',     icon: '👥', label: 'Team Management',   description: 'Team member profiles and roles.' },
-            { key: 'releases', icon: '🚀', label: 'Release TA',        description: 'Release technical approval workflow.' },
-            { key: 'notes',    icon: '📝', label: 'Notes',             description: 'Markdown notes with folders and tags.' },
-          ].map(({ key, icon, label, description }) => {
-            const enabled = enabledFeatures.includes(key);
-            return (
-              <label key={key} className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={enabled}
-                  onChange={() => toggleFeature(key)}
-                  disabled={enabled && enabledFeatures.length === 1}
-                  className="mt-0.5"
-                  style={{ accentColor: 'var(--accent)' }}
-                />
-                <div>
-                  <span className="text-sm font-medium">{icon} {label}</span>
-                  <p className="text-xs text-gray-500">{description}</p>
+        <p className="text-sm text-gray-500 mb-4">Toggle which modules appear in the sidebar. Drag to reorder. At least one must be enabled.</p>
+        <div className="space-y-1">
+          {(() => {
+            const FEATURE_META = {
+              tasks:    { icon: '✅', label: 'My Tasks',        description: 'Personal task tracking with due dates.' },
+              projects: { icon: '📁', label: 'Projects',        description: 'Projects, milestones and linked resources.' },
+              team:     { icon: '👥', label: 'Team Management', description: 'Team member profiles and roles.' },
+              releases: { icon: '🚀', label: 'Release TA',      description: 'Release technical approval workflow.' },
+              notes:    { icon: '📝', label: 'Notes',           description: 'Markdown notes with folders and tags.' },
+            };
+            return featureOrder.map((key, index) => {
+              const { icon, label, description } = FEATURE_META[key] || {};
+              if (!icon) return null;
+              const enabled = enabledFeatures.includes(key);
+              const isOver = dragOverIndex === index;
+              return (
+                <div
+                  key={key}
+                  draggable
+                  onDragStart={() => { dragIndex.current = index; }}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverIndex(index); }}
+                  onDragLeave={() => setDragOverIndex(null)}
+                  onDrop={() => {
+                    const from = dragIndex.current;
+                    if (from === null || from === index) { setDragOverIndex(null); return; }
+                    const next = [...featureOrder];
+                    next.splice(index, 0, next.splice(from, 1)[0]);
+                    updateFeatureOrder(next);
+                    dragIndex.current = null;
+                    setDragOverIndex(null);
+                  }}
+                  onDragEnd={() => { dragIndex.current = null; setDragOverIndex(null); }}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors select-none ${
+                    isOver ? 'border-blue-400 bg-blue-50' : 'border-transparent hover:bg-gray-50'
+                  }`}
+                  style={{ borderColor: isOver ? 'var(--accent)' : undefined }}
+                >
+                  <span className="text-gray-300 cursor-grab active:cursor-grabbing shrink-0" title="Drag to reorder">
+                    <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                      <circle cx="5" cy="4" r="1.2"/><circle cx="11" cy="4" r="1.2"/>
+                      <circle cx="5" cy="8" r="1.2"/><circle cx="11" cy="8" r="1.2"/>
+                      <circle cx="5" cy="12" r="1.2"/><circle cx="11" cy="12" r="1.2"/>
+                    </svg>
+                  </span>
+                  <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
+                    <input
+                      type="checkbox"
+                      checked={enabled}
+                      onChange={() => toggleFeature(key)}
+                      disabled={enabled && enabledFeatures.length === 1}
+                      className="shrink-0"
+                      style={{ accentColor: 'var(--accent)' }}
+                    />
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium">{icon} {label}</span>
+                      <p className="text-xs text-gray-500">{description}</p>
+                    </div>
+                  </label>
                 </div>
-              </label>
-            );
-          })}
+              );
+            });
+          })()}
         </div>
       </div>
 

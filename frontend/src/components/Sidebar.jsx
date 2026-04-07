@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAppSettings } from '../context/AppSettingsContext';
+import NotificationBell from './NotificationBell';
 
 const ALL_LINKS = [
   { to: '/dashboard', label: 'Dashboard',  icon: '🏠', feature: null },
@@ -11,11 +12,13 @@ const ALL_LINKS = [
 ];
 
 export default function Sidebar() {
-  const { appName, logoDataUrl, enabledFeatures } = useAppSettings();
+  const { appName, logoDataUrl, enabledFeatures, featureOrder } = useAppSettings();
 
-  const links = ALL_LINKS.filter(
-    ({ feature }) => feature === null || enabledFeatures.includes(feature)
-  );
+  const dashboardLink = ALL_LINKS.find(l => l.feature === null);
+  const orderedLinks = featureOrder
+    .map(key => ALL_LINKS.find(l => l.feature === key))
+    .filter(l => l && enabledFeatures.includes(l.feature));
+  const links = [dashboardLink, ...orderedLinks];
 
   return (
     <aside className={`${logoDataUrl ? 'w-64' : 'w-56'} flex flex-col shrink-0 sidebar`}>
@@ -42,6 +45,7 @@ export default function Sidebar() {
         ))}
       </nav>
       <div className="border-t sidebar-divider py-2">
+        {enabledFeatures.includes('tasks') && <NotificationBell />}
         <NavLink
           to="/settings"
           className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}

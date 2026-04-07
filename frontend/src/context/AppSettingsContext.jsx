@@ -33,6 +33,10 @@ export function AppSettingsProvider({ children }) {
     () => JSON.parse(localStorage.getItem('enabledFeatures') || 'null') || ALL_FEATURES
   );
 
+  const [featureOrder, setFeatureOrder] = useState(
+    () => JSON.parse(localStorage.getItem('featureOrder') || 'null') || ALL_FEATURES
+  );
+
   const [userProfile, setUserProfile] = useState(
     () => JSON.parse(localStorage.getItem('userProfile') || 'null') || { name: '', role: '' }
   );
@@ -135,6 +139,11 @@ export function AppSettingsProvider({ children }) {
     setEnabledFeatures(features);
   };
 
+  const updateFeatureOrder = (order) => {
+    localStorage.setItem('featureOrder', JSON.stringify(order));
+    setFeatureOrder(order);
+  };
+
   const updateUserProfile = (profile) => {
     localStorage.setItem('userProfile', JSON.stringify(profile));
     setUserProfile(profile);
@@ -161,6 +170,7 @@ export function AppSettingsProvider({ children }) {
         unlockTeam, lockTeam, isTeamUnlocked,
         onboardingComplete, completeOnboarding, resetOnboarding,
         enabledFeatures, updateEnabledFeatures,
+        featureOrder, updateFeatureOrder,
         userProfile, updateUserProfile,
         ALL_FEATURES,
       }}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkBreaks from 'remark-breaks';
+import Modal from '../components/Modal';
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -161,6 +162,10 @@ export default function Notes() {
   const newCatRef = useRef(null);
   const saveTimer = useRef(null);
   const [tagInput, setTagInput] = useState('');
+  const [confirmModal, setConfirmModal] = useState({ open: false, message: '', onConfirm: null });
+
+  const openConfirm = (message, onConfirm) => setConfirmModal({ open: true, message, onConfirm });
+  const closeConfirm = () => setConfirmModal({ open: false, message: '', onConfirm: null });
   const [editingTitle, setEditingTitle] = useState(false);
   const titleRef = useRef(null);
 
@@ -250,12 +255,13 @@ export default function Notes() {
     await loadFolders();
   };
 
-  const deleteFolder = async (id) => {
-    if (!confirm('Delete this folder? Notes inside will be moved to All Notes.')) return;
-    await fetch(`/api/notes/folders/${id}`, { method: 'DELETE' });
-    if (selectedFolderFilter === id) setSelectedFolderFilter('__all__');
-    await loadFolders();
-    await loadNotes();
+  const deleteFolder = (id) => {
+    openConfirm('Delete this folder? Notes inside will be moved to All Notes.', async () => {
+      await fetch(`/api/notes/folders/${id}`, { method: 'DELETE' });
+      if (selectedFolderFilter === id) setSelectedFolderFilter('__all__');
+      await loadFolders();
+      await loadNotes();
+    });
   };
 
   // ── Categories CRUD ────────────────────────────────────────
@@ -273,11 +279,12 @@ export default function Notes() {
     await loadCategories();
   };
 
-  const deleteCategory = async (id, name) => {
-    if (!confirm(`Delete category "${name}"? Notes will keep the category name but the colour will be removed.`)) return;
-    await fetch(`/api/notes/categories/${id}`, { method: 'DELETE' });
-    if (selectedCatFilter === name) setSelectedCatFilter(null);
-    await loadCategories();
+  const deleteCategory = (id, name) => {
+    openConfirm(`Delete category "${name}"? Notes will keep the category name but the colour will be removed.`, async () => {
+      await fetch(`/api/notes/categories/${id}`, { method: 'DELETE' });
+      if (selectedCatFilter === name) setSelectedCatFilter(null);
+      await loadCategories();
+    });
   };
 
   // ── Notes CRUD ─────────────────────────────────────────────
@@ -299,11 +306,12 @@ export default function Notes() {
     setEditingTitle(true);
   };
 
-  const deleteNote = async (id) => {
-    if (!confirm('Delete this note?')) return;
-    await fetch(`/api/notes/${id}`, { method: 'DELETE' });
-    if (selectedNoteId === id) { setSelectedNoteId(null); setNoteContent(null); }
-    await loadNotes();
+  const deleteNote = (id) => {
+    openConfirm('Delete this note?', async () => {
+      await fetch(`/api/notes/${id}`, { method: 'DELETE' });
+      if (selectedNoteId === id) { setSelectedNoteId(null); setNoteContent(null); }
+      await loadNotes();
+    });
   };
 
   const togglePin = async () => {
@@ -348,6 +356,7 @@ export default function Notes() {
   // ── Render ─────────────────────────────────────────────────
 
   return (
+    <>
     <div className="flex h-full" style={{ height: 'calc(100vh - 56px)' }}>
 
       {/* ── Panel 1: Folder sidebar ── */}
@@ -759,5 +768,21 @@ export default function Notes() {
         )}
       </div>
     </div>
+
+    {confirmModal.open && (
+      <Modal title="Confirm deletion" onClose={closeConfirm}>
+        <p className="text-sm text-gray-600 mb-6">{confirmModal.message}</p>
+        <div className="flex justify-end gap-2">
+          <button onClick={closeConfirm} className="btn-secondary text-sm px-4 py-2">Cancel</button>
+          <button
+            onClick={() => { confirmModal.onConfirm(); closeConfirm(); }}
+            className="text-sm font-medium px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600 transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </Modal>
+    )}
+    </>
   );
 }
